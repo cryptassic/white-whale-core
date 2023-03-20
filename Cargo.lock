@@ -500,6 +500,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "incentive-factory"
+version = "1.0.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "cw20",
+ "pool-network",
+ "protobuf",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+ "white-whale",
+]
+
+[[package]]
 name = "integer-sqrt"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -18,7 +18,7 @@ pub fn close_flow(
     let factory_config: pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             deps.api.addr_humanize(&config.factory_address)?,
-            &pool_network::incentive_factory::QueryMsg::GetConfig {},
+            &pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     let flow = {

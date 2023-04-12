@@ -30,7 +30,7 @@ pub fn open_flow(
     let incentive_factory_config: pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             incentive_factory_addr.into_string(),
-            &pool_network::incentive_factory::QueryMsg::GetConfig {},
+            &pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     let mut messages: Vec<CosmosMsg> = vec![];

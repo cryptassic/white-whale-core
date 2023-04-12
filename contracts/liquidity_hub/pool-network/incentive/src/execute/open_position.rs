@@ -22,7 +22,7 @@ pub fn open_position(
     let incentive_factory_config: pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             factory_address,
-            &pool_network::incentive_factory::QueryMsg::GetConfig {},
+            &pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     if unbonding_duration < incentive_factory_config.min_unbonding_duration

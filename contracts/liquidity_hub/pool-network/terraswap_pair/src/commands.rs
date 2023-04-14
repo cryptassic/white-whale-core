@@ -4,10 +4,10 @@ use cosmwasm_std::{
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
-use pool_network::asset::{Asset, AssetInfo, PairInfoRaw, MINIMUM_LIQUIDITY_AMOUNT};
-use pool_network::pair::{Config, Cw20HookMsg, FeatureToggle, PoolFee};
-use pool_network::querier::query_token_info;
-use pool_network::U256;
+use white_whale::pool_network::asset::{Asset, AssetInfo, PairInfoRaw, MINIMUM_LIQUIDITY_AMOUNT};
+use white_whale::pool_network::pair::{Config, Cw20HookMsg, FeatureToggle, PoolFee};
+use white_whale::pool_network::querier::query_token_info;
+use white_whale::pool_network::U256;
 
 use crate::error::ContractError;
 use crate::helpers;
@@ -18,6 +18,8 @@ use crate::state::{
 };
 
 /// Receives cw20 tokens. Used to swap and withdraw from the pool.
+/// If the Cw20HookMsg is Swap, the user must call IncreaseAllowance on the cw20 token first to allow
+/// the contract to spend the tokens and perform the swap operation.
 pub fn receive_cw20(
     deps: DepsMut,
     env: Env,
@@ -296,7 +298,7 @@ pub fn withdraw_liquidity(
         ]))
 }
 
-/// Swaps tokens. The user must IncreaseAllowance on the token if it is a cw20 token they want to swap
+/// Swaps tokens from the pool. The user provides an offer asset and receives the ask asset in return.
 #[allow(clippy::too_many_arguments)]
 pub fn swap(
     deps: DepsMut,

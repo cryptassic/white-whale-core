@@ -2,7 +2,7 @@ use cosmwasm_std::{
     to_binary, Addr, BankMsg, Coin, CosmosMsg, Decimal256, Deps, DepsMut, Env, MessageInfo,
     StdError, Uint128, Uint256, WasmMsg,
 };
-use pool_network::{
+use white_whale::pool_network::{
     asset::AssetInfo,
     incentive::{Curve, Flow},
 };

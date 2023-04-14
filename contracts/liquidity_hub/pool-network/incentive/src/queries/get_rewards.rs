@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, Env, StdResult};
-use pool_network::{asset::Asset, incentive::GetRewardsResponse};
+use white_whale::pool_network::{asset::Asset, incentive::GetRewardsResponse};
 
 use crate::{
     claim::{calculate_claimable_amount, get_user_share},

@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CanonicalAddr};
 
-use crate::asset::{Asset, AssetInfo};
+use crate::pool_network::asset::{Asset, AssetInfo};
 
 #[cw_serde]
 pub struct InstantiateMsg {

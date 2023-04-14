@@ -1,5 +1,5 @@
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, StdError};
-use pool_network::incentive::ClosedPosition;
+use white_whale::pool_network::incentive::ClosedPosition;
 
 use crate::{
     error::ContractError,

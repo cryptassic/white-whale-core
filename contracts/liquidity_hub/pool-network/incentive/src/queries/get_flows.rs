@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, StdError};
-use pool_network::incentive::Flow;
+use white_whale::pool_network::incentive::Flow;
 
 use crate::state::FLOWS;
 

@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coins, to_binary, BankMsg, CosmosMsg, DepsMut, MessageInfo, Response, StdError, WasmMsg,
 };
-use pool_network::asset::AssetInfo;
+use white_whale::pool_network::asset::AssetInfo;
 
 use crate::{
     error::ContractError,
@@ -15,10 +15,10 @@ pub fn close_flow(
 ) -> Result<Response, ContractError> {
     // validate that user is allowed to close the flow
     let config = CONFIG.load(deps.storage)?;
-    let factory_config: pool_network::incentive_factory::GetConfigResponse =
+    let factory_config: white_whale::pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             deps.api.addr_humanize(&config.factory_address)?,
-            &pool_network::incentive_factory::QueryMsg::Config {},
+            &white_whale::pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     let flow = {

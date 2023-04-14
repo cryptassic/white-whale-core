@@ -2,7 +2,9 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::{get_contract_version, set_contract_version};
-use pool_network::incentive::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use white_whale::pool_network::incentive::{
+    Config, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+};
 
 use semver::Version;
 
@@ -37,7 +39,7 @@ pub fn instantiate(
     GLOBAL_WEIGHT.save(deps.storage, &Uint128::zero())?;
 
     Ok(Response::new().set_data(to_binary(
-        &pool_network::incentive::InstantiateReplyCallback {
+        &white_whale::pool_network::incentive::InstantiateReplyCallback {
             lp_address: msg.lp_address,
         },
     )?))

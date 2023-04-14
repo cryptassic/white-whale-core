@@ -2,13 +2,13 @@ use cosmwasm_std::testing::{
     mock_dependencies_with_balance, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
 };
 use cosmwasm_std::{
-    attr, coin, from_binary, to_binary, Api, CanonicalAddr, CosmosMsg, Decimal, OwnedDeps, Reply,
-    ReplyOn, Response, SubMsg, SubMsgResponse, SubMsgResult, Uint128, WasmMsg,
+    attr, coin, from_binary, to_binary, Api, CanonicalAddr, Coin, CosmosMsg, Decimal, OwnedDeps,
+    Reply, ReplyOn, Response, SubMsg, SubMsgResponse, SubMsgResult, Uint128, WasmMsg,
 };
 
 use white_whale::fee::Fee;
 use white_whale::pool_network;
-use white_whale::pool_network::asset::{AssetInfo, PairInfo, PairInfoRaw, PairType};
+use white_whale::pool_network::asset::{AssetInfo, AssetInfoRaw, PairInfo, PairInfoRaw, PairType};
 use white_whale::pool_network::factory::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, NativeTokenDecimalsResponse, QueryMsg,
 };
@@ -27,6 +27,7 @@ fn proper_initialization() {
 
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -49,6 +50,7 @@ fn can_migrate_contract() {
 
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -72,6 +74,7 @@ fn update_config() {
 
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -86,6 +89,7 @@ fn update_config() {
     let msg = ExecuteMsg::UpdateConfig {
         owner: Some("addr0001".to_string()),
         pair_code_id: None,
+        trio_code_id: None,
         token_code_id: None,
         fee_collector_addr: None,
     };
@@ -107,6 +111,7 @@ fn update_config() {
     let msg = ExecuteMsg::UpdateConfig {
         owner: None,
         pair_code_id: Some(100u64),
+        trio_code_id: Some(300u64),
         token_code_id: Some(200u64),
         fee_collector_addr: Some("new_collector".to_string()),
     };
@@ -119,6 +124,7 @@ fn update_config() {
     let config_res: ConfigResponse = from_binary(&query_res).unwrap();
     assert_eq!(200u64, config_res.token_code_id);
     assert_eq!(100u64, config_res.pair_code_id);
+    assert_eq!(300u64, config_res.trio_code_id);
     assert_eq!("addr0001".to_string(), config_res.owner);
     assert_eq!("new_collector".to_string(), config_res.fee_collector_addr);
 
@@ -129,6 +135,7 @@ fn update_config() {
         owner: None,
         fee_collector_addr: None,
         pair_code_id: None,
+        trio_code_id: None,
         token_code_id: None,
     };
 
@@ -144,6 +151,7 @@ fn init(
 ) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -190,10 +198,17 @@ fn create_pair() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
-    let info = mock_info("addr0000", &[]);
+    let info = mock_info(
+        "addr0000",
+        &[Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::new(1u128),
+        }],
+    );
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
     assert_eq!(
         res.attributes,
@@ -201,7 +216,7 @@ fn create_pair() {
             attr("action", "create_pair"),
             attr("pair", "uusd-mAAPL"),
             attr("pair_label", "uusd-mAAPL pair"),
-            attr("pair_type", "ConstantProduct")
+            attr("pair_type", "ConstantProduct"),
         ]
     );
     assert_eq!(
@@ -227,11 +242,16 @@ fn create_pair() {
                         },
                     },
                     fee_collector_addr: "collector".to_string(),
-                    pair_type: PairType::ConstantProduct
+                    pair_type: PairType::ConstantProduct,
+                    token_factory_lp: false,
                 })
                 .unwrap(),
                 code_id: 321u64,
-                funds: vec![],
+                funds: [Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128::new(1u128),
+                }]
+                .to_vec(),
                 label: "uusd-mAAPL pair".to_string(),
                 admin: Some(MOCK_CONTRACT_ADDR.to_string()),
             }
@@ -250,7 +270,7 @@ fn create_pair() {
             asset_infos: raw_infos.clone(),
             pair_key: pair_key(&raw_infos),
             asset_decimals: [6u8, 8u8],
-            pair_type: PairType::ConstantProduct
+            pair_type: PairType::ConstantProduct,
         }
     );
 }
@@ -284,6 +304,7 @@ fn create_stableswap_pair() {
             },
         },
         pair_type: PairType::StableSwap { amp: 100 },
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -295,7 +316,7 @@ fn create_stableswap_pair() {
             attr("action", "create_pair"),
             attr("pair", "uusd-mAAPL"),
             attr("pair_label", "uusd-mAAPL pair"),
-            attr("pair_type", "StableSwap")
+            attr("pair_type", "StableSwap"),
         ]
     );
     assert_eq!(
@@ -321,7 +342,8 @@ fn create_stableswap_pair() {
                         },
                     },
                     fee_collector_addr: "collector".to_string(),
-                    pair_type: PairType::StableSwap { amp: 100 }
+                    pair_type: PairType::StableSwap { amp: 100 },
+                    token_factory_lp: false,
                 })
                 .unwrap(),
                 code_id: 321u64,
@@ -344,7 +366,7 @@ fn create_stableswap_pair() {
             asset_infos: raw_infos.clone(),
             pair_key: pair_key(&raw_infos),
             asset_decimals: [6u8, 8u8],
-            pair_type: PairType::StableSwap { amp: 100 }
+            pair_type: PairType::StableSwap { amp: 100 },
         }
     );
 }
@@ -394,6 +416,7 @@ fn create_pair_native_token_and_ibc_token() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -405,7 +428,7 @@ fn create_pair_native_token_and_ibc_token() {
             attr("action", "create_pair"),
             attr("pair", "uusd-ibc/2739...5EB2"),
             attr("pair_label", "uusd-ibc/2739...5EB2 pair"),
-            attr("pair_type", "ConstantProduct")
+            attr("pair_type", "ConstantProduct"),
         ]
     );
     assert_eq!(
@@ -432,6 +455,7 @@ fn create_pair_native_token_and_ibc_token() {
                     },
                     fee_collector_addr: "collector".to_string(),
                     pair_type: PairType::ConstantProduct,
+                    token_factory_lp: false,
                 })
                 .unwrap(),
                 code_id: 321u64,
@@ -511,6 +535,7 @@ fn create_ibc_tokens_pair() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -522,7 +547,7 @@ fn create_ibc_tokens_pair() {
             attr("action", "create_pair"),
             attr("pair", "ibc/4CD5...3D04-ibc/2739...5EB2"),
             attr("pair_label", "ibc/4CD5...3D04-ibc/2739...5EB2 pair"),
-            attr("pair_type", "ConstantProduct")
+            attr("pair_type", "ConstantProduct"),
         ]
     );
     assert_eq!(
@@ -549,6 +574,7 @@ fn create_ibc_tokens_pair() {
                     },
                     fee_collector_addr: "collector".to_string(),
                     pair_type: PairType::ConstantProduct,
+                    token_factory_lp: false,
                 })
                 .unwrap(),
                 code_id: 321u64,
@@ -628,6 +654,7 @@ fn create_pair_ethereum_asset_and_ibc_token() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -639,7 +666,7 @@ fn create_pair_ethereum_asset_and_ibc_token() {
             attr("action", "create_pair"),
             attr("pair", "peggy0x87a...1B5-ibc/2739...5EB2"),
             attr("pair_label", "peggy0x87a...1B5-ibc/2739...5EB2 pair"),
-            attr("pair_type", "ConstantProduct")
+            attr("pair_type", "ConstantProduct"),
         ]
     );
     assert_eq!(
@@ -665,7 +692,8 @@ fn create_pair_ethereum_asset_and_ibc_token() {
                         },
                     },
                     fee_collector_addr: "collector".to_string(),
-                    pair_type: PairType::ConstantProduct
+                    pair_type: PairType::ConstantProduct,
+                    token_factory_lp: false,
                 })
                 .unwrap(),
                 code_id: 321u64,
@@ -688,7 +716,7 @@ fn create_pair_ethereum_asset_and_ibc_token() {
             asset_infos: raw_infos.clone(),
             pair_key: pair_key(&raw_infos),
             asset_decimals: [6u8, 6u8],
-            pair_type: PairType::ConstantProduct
+            pair_type: PairType::ConstantProduct,
         }
     );
 }
@@ -721,6 +749,7 @@ fn fail_to_create_same_pair() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -763,6 +792,7 @@ fn fail_to_create_existing_pair() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -780,7 +810,9 @@ fn fail_to_create_existing_pair() {
             &mut deps.storage,
             &pair_key,
             &PairInfoRaw {
-                liquidity_token: deps.api.addr_canonicalize("lp_token").unwrap(),
+                liquidity_token: AssetInfoRaw::Token {
+                    contract_addr: CanonicalAddr::from(vec![]),
+                },
                 contract_addr: deps.api.addr_canonicalize("pair_contract").unwrap(),
                 asset_infos: raw_infos,
                 asset_decimals: [6u8, 6u8],
@@ -826,6 +858,7 @@ fn fail_to_create_pair_with_inactive_denoms() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -869,6 +902,7 @@ fn fail_to_create_pair_with_invalid_denom() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -904,6 +938,7 @@ fn fail_to_create_pair_with_invalid_denom() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -923,6 +958,7 @@ fn fail_to_create_pair_with_unknown_token() {
 
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -956,6 +992,7 @@ fn fail_to_create_pair_with_unknown_token() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -975,6 +1012,7 @@ fn fail_to_create_pair_with_unknown_ibc_token() {
 
     let msg = InstantiateMsg {
         pair_code_id: 321u64,
+        trio_code_id: 456u64,
         token_code_id: 123u64,
         fee_collector_addr: "collector".to_string(),
     };
@@ -1008,6 +1046,7 @@ fn fail_to_create_pair_with_unknown_ibc_token() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
 
     let env = mock_env();
@@ -1082,7 +1121,9 @@ fn reply_test() {
                     },
                 ],
                 contract_addr: "0000".to_string(),
-                liquidity_token: "liquidity0000".to_string(),
+                liquidity_token: AssetInfo::Token {
+                    contract_addr: "liquidity0000".to_string(),
+                },
                 asset_decimals: [8u8, 8u8],
                 pair_type: PairType::ConstantProduct,
             },
@@ -1105,7 +1146,9 @@ fn reply_test() {
     assert_eq!(
         pair_res,
         PairInfo {
-            liquidity_token: "liquidity0000".to_string(),
+            liquidity_token: AssetInfo::Token {
+                contract_addr: "liquidity0000".to_string(),
+            },
             contract_addr: "0000".to_string(),
             asset_infos,
             asset_decimals: [8u8, 8u8],
@@ -1265,6 +1308,7 @@ fn execute_transactions_unauthorized() {
             },
         },
         pair_type: PairType::ConstantProduct,
+        token_factory_lp: false,
     };
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
@@ -1294,6 +1338,7 @@ fn execute_transactions_unauthorized() {
         fee_collector_addr: None,
         token_code_id: None,
         pair_code_id: None,
+        trio_code_id: None,
     };
 
     let res = execute(deps.as_mut(), env, info, msg);
@@ -1396,7 +1441,9 @@ fn delete_pair() {
             &mut deps.storage,
             &pair_key_vec,
             &PairInfoRaw {
-                liquidity_token: CanonicalAddr(cosmwasm_std::Binary(vec![])),
+                liquidity_token: AssetInfoRaw::Token {
+                    contract_addr: CanonicalAddr(cosmwasm_std::Binary(vec![])),
+                },
                 contract_addr: deps.api.addr_canonicalize("pair0000").unwrap(),
                 asset_infos: raw_infos,
                 asset_decimals: [6, 6],
@@ -1418,7 +1465,7 @@ fn delete_pair() {
         res.attributes,
         vec![
             attr("action", "remove_pair"),
-            attr("pair_contract_addr", "pair0000",),
+            attr("pair_contract_addr", "pair0000"),
         ]
     );
 
@@ -1484,7 +1531,7 @@ fn update_pair_config() {
     assert_eq!(
         res,
         Response::new()
-            .add_attributes(vec![attr("action", "update_pair_config"),])
+            .add_attributes(vec![attr("action", "update_pair_config")])
             .add_message(WasmMsg::Execute {
                 contract_addr: "pair_addr".to_string(),
                 funds: vec![],
@@ -1504,7 +1551,7 @@ fn update_pair_config() {
                     }),
                     feature_toggle: None,
                 })
-                .unwrap()
+                .unwrap(),
             })
     );
 }

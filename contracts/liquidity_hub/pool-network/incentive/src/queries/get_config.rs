@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, StdError};
-use pool_network::incentive::GetConfigResponse;
+use white_whale::pool_network::incentive::GetConfigResponse;
 
 use crate::state::CONFIG;
 

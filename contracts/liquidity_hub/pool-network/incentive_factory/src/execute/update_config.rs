@@ -1,5 +1,5 @@
 use cosmwasm_std::{DepsMut, Response};
-use pool_network::asset::Asset;
+use white_whale::pool_network::asset::Asset;
 
 use crate::{error::ContractError, state::CONFIG};
 

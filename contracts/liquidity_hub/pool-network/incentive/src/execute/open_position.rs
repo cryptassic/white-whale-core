@@ -1,5 +1,5 @@
 use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdError, Uint128, WasmMsg};
-use pool_network::incentive::OpenPosition;
+use white_whale::pool_network::incentive::OpenPosition;
 
 use crate::{
     error::ContractError,
@@ -19,10 +19,10 @@ pub fn open_position(
     let factory_address = deps.api.addr_humanize(&config.factory_address)?;
 
     // validate unbonding duration
-    let incentive_factory_config: pool_network::incentive_factory::GetConfigResponse =
+    let incentive_factory_config: white_whale::pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             factory_address,
-            &pool_network::incentive_factory::QueryMsg::Config {},
+            &white_whale::pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     if unbonding_duration < incentive_factory_config.min_unbonding_duration

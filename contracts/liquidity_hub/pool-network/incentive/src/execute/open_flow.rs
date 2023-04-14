@@ -4,7 +4,7 @@ use cosmwasm_std::{
     to_binary, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
     WasmMsg,
 };
-use pool_network::{
+use white_whale::pool_network::{
     asset::{Asset, AssetInfo},
     incentive::Curve,
 };
@@ -27,10 +27,10 @@ pub fn open_flow(
 
     let incentive_factory_addr = deps.api.addr_humanize(&config.factory_address)?;
 
-    let incentive_factory_config: pool_network::incentive_factory::GetConfigResponse =
+    let incentive_factory_config: white_whale::pool_network::incentive_factory::GetConfigResponse =
         deps.querier.query_wasm_smart(
             incentive_factory_addr.into_string(),
-            &pool_network::incentive_factory::QueryMsg::Config {},
+            &white_whale::pool_network::incentive_factory::QueryMsg::Config {},
         )?;
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -182,7 +182,7 @@ pub fn open_flow(
     let flow_id =
         FLOW_COUNTER.update::<_, StdError>(deps.storage, |current_id| Ok(current_id + 1))?;
     FLOWS.update::<_, StdError>(deps.storage, |mut flows| {
-        flows.push(pool_network::incentive::Flow {
+        flows.push(white_whale::pool_network::incentive::Flow {
             flow_creator: deps.api.addr_canonicalize(&info.sender.into_string())?,
             flow_id,
             curve,
